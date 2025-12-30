@@ -1,0 +1,210 @@
+.ant-layout {
+  background: #ffffff !important;
+}
+.site-layout .site-layout-background {
+  background: #fff;
+}
+[data-theme='dark'] .site-layout .site-layout-background {
+  background: #141414;
+}
+
+.headerIcon .ant-dropdown-menu {
+  border-radius: 6px;
+  background: none;
+  padding: 0;
+  box-shadow: none;
+}
+.headerIcon .ant-dropdown-menu-item:hover,
+.headerIcon .ant-dropdown-menu-item.ant-dropdown-menu-item-active {
+  background: none;
+}
+
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+.login-form button[type='submit'] {
+  margin-bottom: 20px;
+}
+.login-form-forgot {
+  float: right;
+}
+
+.login-form-button {
+  width: 100%;
+}
+
+.ant-table-thead > tr > th {
+  font-weight: 700;
+}
+.ant-typography strong {
+  font-weight: 700;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700 !important;
+}
+
+.ant-menu-inline {
+  padding-bottom: 70px;
+}
+
+.tabContent .ant-tabs-right > .ant-tabs-content-holder,
+.tabContent .ant-tabs-right > div > .ant-tabs-content-holder {
+  border-right: none;
+}
+
+.tabContent .ant-tabs .ant-tabs-tab + .ant-tabs-tab {
+  margin: 0;
+}
+
+.ant-select-show-search:where(.css-dev-only-do-not-override-2q8sxy).ant-select:not(
+    .ant-select-customize-input
+  )
+  .ant-select-selector {
+  cursor: pointer;
+}
+
+.ant-menu-item {
+  height: 36px !important;
+}
+@media (max-width: 768px) {
+  .tabContent .ant-tabs-right > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+    padding-right: 0;
+    margin-top: 30px;
+  }
+  .tabContent .ant-tabs {
+    display: block;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+/* Compact form layout for PaymentForm and similar small forms */
+.compactForm {
+  margin-top: -12px;
+  padding: 12px 12px 6px;
+  background: #fbfbfb;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+}
+@media (max-width: 576px) {
+  .compactForm {
+    margin-top: -8px;
+    padding: 10px 10px 4px;
+  }
+}
+.compactForm .ant-row { margin-left: -6px !important; margin-right: -6px !important; }
+.compactForm .ant-col { padding-left: 6px !important; padding-right: 6px !important; padding-bottom: 6px; }
+.compactForm .ant-form-item { margin: 0 0 6px 0 !important; padding: 0 !important; }
+.compactForm .ant-form-item-label { padding-bottom: 0; margin: 0; }
+.compactForm .ant-form-item-label > label { font-size: 12px; color: #444; }
+.compactForm .ant-input,
+.compactForm .ant-input-number,
+.compactForm .ant-picker,
+.compactForm .ant-select-selector,
+.compactForm .ant-input-affix-wrapper {
+  border-radius: 6px;
+}
+.compactForm .ant-form-item .ant-form-item-control { margin: 0; }
+.compactForm .ant-form-item .ant-form-item-control-input { min-height: 0; }
+.compactForm .ant-form-item .ant-form-item-explain { margin-top: 0; }
+.compactForm__note { color: #777; font-size: 12px; }
+.compactForm__actions { margin-top: 4px !important; display: flex; justify-content: flex-end; }
+
+/* Post Payment modal compact layout */
+.postPaymentModal .ant-modal-content {
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.postPaymentModal .ant-modal-header {
+  margin-bottom: 6px;
+}
+.postPaymentModal .ant-modal-title {
+  font-weight: 700;
+}
+.postPaymentSummary .ant-descriptions-view {
+  border-radius: 8px;
+  overflow: hidden;
+}
+.postPaymentSummary .ant-descriptions-item-label {
+  background: #f8f8f8;
+  font-size: 12px;
+}
+.postPaymentSummary .ant-descriptions-item-content {
+  font-weight: 600;
+}
+.postPaymentGrid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.postPaymentField-label {
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #444;
+}
+.postPaymentField.span-2 { grid-column: span 2; }
+.postPaymentModal .ant-input,
+.postPaymentModal .ant-input-number,
+.postPaymentModal .ant-picker,
+.postPaymentModal .ant-select-selector,
+.postPaymentModal .ant-input-affix-wrapper {
+  border-radius: 6px;
+}
+.postPaymentActions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+@media (max-width: 768px) {
+  .postPaymentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .postPaymentField.span-2 { grid-column: span 2; }
+}
+@media (max-width: 576px) {
+  .postPaymentGrid { grid-template-columns: 1fr; }
+  .postPaymentField.span-2 { grid-column: span 1; }
+}
+
+/* Remove inner row separators for specific tables */
+.no-row-separator .ant-table-tbody > tr > td {
+  border-bottom: 0 !important;
+}
+
+/* Print-friendly: hide navigation/sidebar and use full width */
+@media print {
+  .ant-layout-sider,
+  .navigation,
+  .ant-layout-sider-trigger {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  .ant-layout,
+  .ant-layout-content,
+  .whiteBox {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    background: #ffffff !important;
+  }
+body {
+  margin: 0 !important;
+  background: #ffffff !important;
+}
+}

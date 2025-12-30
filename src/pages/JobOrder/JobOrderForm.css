@@ -1,0 +1,44 @@
+.jo-compact .ant-form-item {
+  margin-bottom: 6px; /* tighter field spacing */
+}
+
+.jo-compact .ant-row { margin-bottom: 2px; }
+.jo-compact .ant-row > [class*='ant-col-'] { padding-left: 6px; padding-right: 6px; }
+
+.jo-compact .ant-typography {
+  margin: 6px 0 4px; /* compact section titles */
+}
+
+.jo-mini-title {
+  font-weight: 600;
+  font-size: 12px;
+  margin: 2px 0 4px;
+}
+
+.jo-compact .ant-input,
+.jo-compact .ant-input-number,
+.jo-compact .ant-select,
+.jo-compact .ant-picker {
+  width: 100%;
+}
+
+/* Compact form labels */
+.jo-compact .ant-form-item-label { padding-bottom: 2px; }
+.jo-compact .ant-form-item-label > label { font-size: 12px; margin-bottom: 0; }
+
+.jo-compact p { margin: 0; }
+
+/* Make dropdowns fill their column to remove gaps */
+.jo-compact .jo-rates .ant-select { width: 100%; }
+
+/* Make everything look small and neat */
+.jo-compact .ant-input,
+.jo-compact .ant-input-number-input,
+.jo-compact .ant-picker-input > input,
+.jo-compact .ant-select-selector,
+.jo-compact .ant-btn {
+  font-size: 12px;
+}
+
+/* Align text labels vertically with small controls */
+.jo-compact .ant-row p { padding-top: 0 !important; line-height: 24px; }

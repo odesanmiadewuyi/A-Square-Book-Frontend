@@ -1,0 +1,29 @@
+.ap-invoice-compact .ant-form-item { margin-bottom: 6px; }
+.ap-invoice-compact .ant-row { margin-bottom: 2px; }
+
+.ap-invoice-divider {
+  margin: 8px 0;
+}
+
+.ap-invoice-compact .ant-input,
+.ap-invoice-compact .ant-input-number,
+.ap-invoice-compact .ant-select,
+.ap-invoice-compact .ant-picker {
+  width: 100%;
+}
+
+.ap-invoice-compact p {
+  margin: 0;
+}
+
+/* Make everything look small and neat */
+.ap-invoice-compact .ant-input,
+.ap-invoice-compact .ant-input-number-input,
+.ap-invoice-compact .ant-picker-input > input,
+.ap-invoice-compact .ant-select-selector,
+.ap-invoice-compact .ant-btn {
+  font-size: 12px;
+}
+
+/* Vertically center plain-text labels with small controls */
+.ap-invoice-compact .ant-row p { padding-top: 0 !important; line-height: 24px; }
