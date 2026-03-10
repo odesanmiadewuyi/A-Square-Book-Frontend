@@ -16,6 +16,16 @@ const toApiBase = (raw = '') => {
   return `${cleaned}/api/`;
 };
 
+const toRootBase = (raw = '') => {
+  const cleaned = raw
+    .toString()
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .replace(/\/+$/, '');
+  if (!cleaned) return '';
+  return `${cleaned.replace(/\/api$/i, '')}/`;
+};
+
 const buildDirectApiBase = () => {
   // Respect explicit backend configuration first.
   const configured = toApiBase(import.meta.env.VITE_BACKEND_SERVER || '');
@@ -38,6 +48,7 @@ const buildDirectApiBase = () => {
 };
 
 const DIRECT_API_BASE = buildDirectApiBase();
+const DIRECT_ROOT_BASE = toRootBase(DIRECT_API_BASE) || '/';
 const normalizeEntity = (value = '') =>
   value
     .toString()
@@ -49,32 +60,76 @@ const resolveCrudEntity = (value = '') => {
   const normalized = normalizeEntity(value);
   if (!normalized) return normalized;
   if (normalized === 'memberships') return 'membership';
+  if (isMembershipCategoryPaymentEntity(normalized)) return 'membershipcategorypayment';
+  if (isMembershipCategoryEntity(normalized)) return 'membershipcategory';
   if (isMembershipAccountSetupEntity(normalized)) return 'membershipaccountsetup';
   if (isMembershipCategoryTypeEntity(normalized)) return 'membershipcategorytype';
   return normalized;
 };
 
 const withDirectApi = (path = '') => `${DIRECT_API_BASE}${path.toString().replace(/^\/+/, '')}`;
+const withDirectRoot = (path = '') => `${DIRECT_ROOT_BASE}${path.toString().replace(/^\/+/, '')}`;
 
+const MEMBERSHIP_BASES = ['membership', 'memberships'];
 const MEMBERSHIP_ACCOUNT_SETUP_BASES = [
   'membershipaccountsetup',
+  'membershipaccountsetups',
   'membershipacountsetup',
   'membershipacccountsetup',
   'membership-account-setup',
   'membership/account-setup',
+  'membership/accountsetup',
+  'membership/account-setups',
+];
+const MEMBERSHIP_CATEGORY_BASES = [
+  'membershipcategory',
+  'membershipcategories',
+  'membershipcategorysetup',
+  'membershipcategoriesetup',
+  'membership/category-setup',
+  'membership-category-setup',
+  'membership/category',
+  'membership/categories',
+  'membership/categorysetup',
 ];
 const MEMBERSHIP_CATEGORY_TYPE_BASES = [
   'membershipcategorytype',
+  'membershipcategorytypes',
+  'membershipcategorytypesetup',
   'membership/category-type-setup',
+  'membership-category-type-setup',
+  'membership/category-type',
+  'membership/category-types',
+  'membership/categorytypesetup',
   // Backward-compatibility aliases for typo variants seen in some builds.
   'membershippicategorytype',
   'membershippiategorytype',
   'membershippi/category-type-setup',
 ];
+const MEMBERSHIP_CATEGORY_PAYMENT_BASES = [
+  'membershipcategorypayment',
+  'membershipcategorypayments',
+  'membershipcategorypaymentsetup',
+  'membership/category-payment-setup',
+  'membership-category-payment-setup',
+  'membership/category-payment',
+  'membership/category-payments',
+  'membership/categorypaymentsetup',
+];
 
 const isMembershipAccountSetupEntity = (value = '') => {
   const compact = value.toString().toLowerCase().replace(/[^a-z]/g, '');
   return compact.includes('membership') && compact.includes('accountsetup');
+};
+const isMembershipCategoryEntity = (value = '') => {
+  const compact = value.toString().toLowerCase().replace(/[^a-z]/g, '');
+  if (!compact.includes('membership') || !compact.includes('category')) return false;
+  if (compact.includes('categorytype') || compact.includes('categorypayment')) return false;
+  return (
+    compact === 'membershipcategory' ||
+    compact === 'membershipcategorysetup' ||
+    compact.includes('categorysetup')
+  );
 };
 const isMembershipCategoryTypeEntity = (value = '') => {
   const compact = value.toString().toLowerCase().replace(/[^a-z]/g, '');
@@ -84,27 +139,36 @@ const isMembershipCategoryTypeEntity = (value = '') => {
   if (compact.includes('picategorytype') || compact.includes('piategorytype')) return true;
   return false;
 };
+const isMembershipCategoryPaymentEntity = (value = '') => {
+  const compact = value.toString().toLowerCase().replace(/[^a-z]/g, '');
+  if (!compact.includes('membership')) return false;
+  return compact.includes('categorypayment') || compact.includes('categorypaymentsetup');
+};
 
+const buildMembershipCandidates = (suffix = '') => {
+  return buildMembershipEntityCandidates(MEMBERSHIP_BASES, suffix);
+};
 const buildMembershipAccountSetupCandidates = (suffix = '') => {
-  const cleanSuffix = suffix.toString().replace(/^\/+/, '');
-  const urls = [];
-
-  for (const base of MEMBERSHIP_ACCOUNT_SETUP_BASES) {
-    const rel = `${base}/${cleanSuffix}`.replace(/\/+$/, '');
-    urls.push(rel);
-    urls.push(withDirectApi(rel));
-  }
-
-  return Array.from(new Set(urls));
+  return buildMembershipEntityCandidates(MEMBERSHIP_ACCOUNT_SETUP_BASES, suffix);
+};
+const buildMembershipCategoryCandidates = (suffix = '') => {
+  return buildMembershipEntityCandidates(MEMBERSHIP_CATEGORY_BASES, suffix);
 };
 const buildMembershipCategoryTypeCandidates = (suffix = '') => {
+  return buildMembershipEntityCandidates(MEMBERSHIP_CATEGORY_TYPE_BASES, suffix);
+};
+const buildMembershipCategoryPaymentCandidates = (suffix = '') => {
+  return buildMembershipEntityCandidates(MEMBERSHIP_CATEGORY_PAYMENT_BASES, suffix);
+};
+const buildMembershipEntityCandidates = (bases = [], suffix = '') => {
   const cleanSuffix = suffix.toString().replace(/^\/+/, '');
   const urls = [];
 
-  for (const base of MEMBERSHIP_CATEGORY_TYPE_BASES) {
+  for (const base of bases) {
     const rel = `${base}/${cleanSuffix}`.replace(/\/+$/, '');
     urls.push(rel);
     urls.push(withDirectApi(rel));
+    urls.push(withDirectRoot(rel));
   }
 
   return Array.from(new Set(urls));
@@ -221,10 +285,54 @@ const request = {
           // Fall through to global handler.
         }
       }
+      if (status === 404 && isMembershipCategoryPaymentEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryPaymentCandidates('create');
+          for (const url of candidates) {
+            try {
+              const response = await axios.post(url, jsonData);
+              successHandler(response, {
+                notifyOnSuccess: true,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
       if (status === 404 && isMembershipCategoryTypeEntity(normalizedEntity)) {
         try {
           includeToken();
           const candidates = buildMembershipCategoryTypeCandidates('create');
+          for (const url of candidates) {
+            try {
+              const response = await axios.post(url, jsonData);
+              successHandler(response, {
+                notifyOnSuccess: true,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
+      if (status === 404 && isMembershipCategoryEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryCandidates('create');
           for (const url of candidates) {
             try {
               const response = await axios.post(url, jsonData);
@@ -296,10 +404,54 @@ const request = {
           // Fall through to global handler.
         }
       }
+      if (status === 404 && isMembershipCategoryPaymentEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryPaymentCandidates(`read/${id}`);
+          for (const url of candidates) {
+            try {
+              const response = await axios.get(url);
+              successHandler(response, {
+                notifyOnSuccess: false,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
       if (status === 404 && isMembershipCategoryTypeEntity(normalizedEntity)) {
         try {
           includeToken();
           const candidates = buildMembershipCategoryTypeCandidates(`read/${id}`);
+          for (const url of candidates) {
+            try {
+              const response = await axios.get(url);
+              successHandler(response, {
+                notifyOnSuccess: false,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
+      if (status === 404 && isMembershipCategoryEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryCandidates(`read/${id}`);
           for (const url of candidates) {
             try {
               const response = await axios.get(url);
@@ -356,10 +508,54 @@ const request = {
           // Fall through to global handler.
         }
       }
+      if (status === 404 && isMembershipCategoryPaymentEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryPaymentCandidates(`update/${id}`);
+          for (const url of candidates) {
+            try {
+              const response = await axios.patch(url, jsonData);
+              successHandler(response, {
+                notifyOnSuccess: true,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
       if (status === 404 && isMembershipCategoryTypeEntity(normalizedEntity)) {
         try {
           includeToken();
           const candidates = buildMembershipCategoryTypeCandidates(`update/${id}`);
+          for (const url of candidates) {
+            try {
+              const response = await axios.patch(url, jsonData);
+              successHandler(response, {
+                notifyOnSuccess: true,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
+      if (status === 404 && isMembershipCategoryEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryCandidates(`update/${id}`);
           for (const url of candidates) {
             try {
               const response = await axios.patch(url, jsonData);
@@ -432,10 +628,54 @@ const request = {
           // Fall through to global handler.
         }
       }
+      if (status === 404 && isMembershipCategoryPaymentEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryPaymentCandidates(`delete/${id}`);
+          for (const url of candidates) {
+            try {
+              const response = await axios.delete(url);
+              successHandler(response, {
+                notifyOnSuccess: true,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
       if (status === 404 && isMembershipCategoryTypeEntity(normalizedEntity)) {
         try {
           includeToken();
           const candidates = buildMembershipCategoryTypeCandidates(`delete/${id}`);
+          for (const url of candidates) {
+            try {
+              const response = await axios.delete(url);
+              successHandler(response, {
+                notifyOnSuccess: true,
+                notifyOnFailed: true,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to global handler.
+        }
+      }
+      if (status === 404 && isMembershipCategoryEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryCandidates(`delete/${id}`);
           for (const url of candidates) {
             try {
               const response = await axios.delete(url);
@@ -522,11 +762,7 @@ const request = {
       if (status === 404 && normalizedEntity === 'membership') {
         try {
           includeToken();
-          const candidates = [
-            'memberships/list' + query,
-            `${DIRECT_API_BASE}membership/list${query}`,
-            `${DIRECT_API_BASE}memberships/list${query}`,
-          ];
+          const candidates = buildMembershipCandidates(`list${query}`);
 
           for (const url of candidates) {
             try {
@@ -581,6 +817,35 @@ const request = {
           message: 'Membership account setup endpoint unavailable in current API target',
         };
       }
+      if (status === 404 && isMembershipCategoryPaymentEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryPaymentCandidates(`list${query}`);
+
+          for (const url of candidates) {
+            try {
+              const response = await axios.get(url);
+              successHandler(response, {
+                notifyOnSuccess: false,
+                notifyOnFailed: false,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to original error handling.
+        }
+        return {
+          success: true,
+          result: [],
+          pagination: { page: 1, count: 0 },
+          message: 'Membership category payment endpoint unavailable in current API target',
+        };
+      }
       if (status === 404 && isMembershipCategoryTypeEntity(normalizedEntity)) {
         try {
           includeToken();
@@ -608,6 +873,35 @@ const request = {
           result: [],
           pagination: { page: 1, count: 0 },
           message: 'Membership category type endpoint unavailable in current API target',
+        };
+      }
+      if (status === 404 && isMembershipCategoryEntity(normalizedEntity)) {
+        try {
+          includeToken();
+          const candidates = buildMembershipCategoryCandidates(`list${query}`);
+
+          for (const url of candidates) {
+            try {
+              const response = await axios.get(url);
+              successHandler(response, {
+                notifyOnSuccess: false,
+                notifyOnFailed: false,
+              });
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
+        } catch (_) {
+          // Fall through to original error handling.
+        }
+        return {
+          success: true,
+          result: [],
+          pagination: { page: 1, count: 0 },
+          message: 'Membership category endpoint unavailable in current API target',
         };
       }
       return errorHandler(error);
@@ -658,8 +952,26 @@ const request = {
       if (status === 404 && normalizedEntity === 'membershippayment/next-ref') {
         try {
           includeToken();
-          const response = await axios.get(`${DIRECT_API_BASE}membershippayment/next-ref`);
-          return response.data;
+          const candidates = Array.from(
+            new Set([
+              'membershippayment/next-ref',
+              'membership/membership-payment/next-ref',
+              withDirectApi('membershippayment/next-ref'),
+              withDirectApi('membership/membership-payment/next-ref'),
+              withDirectRoot('membershippayment/next-ref'),
+              withDirectRoot('membership/membership-payment/next-ref'),
+            ])
+          );
+          for (const url of candidates) {
+            try {
+              const response = await axios.get(url);
+              return response.data;
+            } catch (retryError) {
+              if (retryError?.response?.status !== 404) {
+                throw retryError;
+              }
+            }
+          }
         } catch (_) {
           // Fall through to global error handling below.
         }
