@@ -14,9 +14,15 @@ const AUTH_INITIAL_STATE = {
   isSuccess: false,
 };
 
-// Disable auto sign-in: always start from a logged-out state.
-storePersist.remove('auth');
-const auth_state = AUTH_INITIAL_STATE;
+const persistedAuth = storePersist.get('auth');
+const hasToken = Boolean(persistedAuth?.current?.token);
+const auth_state = hasToken
+  ? {
+      ...AUTH_INITIAL_STATE,
+      ...persistedAuth,
+      isLoggedIn: true,
+    }
+  : AUTH_INITIAL_STATE;
 
 const initialState = { auth: auth_state };
 

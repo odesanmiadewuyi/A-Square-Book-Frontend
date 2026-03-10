@@ -11,6 +11,7 @@ export default function PostingAccountForm(){
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [subGroupOptions, setSubGroupOptions] = useState([]);
   const [loadingSubGroups, setLoadingSubGroups] = useState(false);
+  const selectedClassCode = Form.useWatch('classCode', form);
 
   // Ensure backend indexes are healthy (idempotent)
   useEffect(() => {
@@ -21,7 +22,15 @@ export default function PostingAccountForm(){
 
   const handleClassChange = async (classCode) => {
     const cls = (classCode || '').toString().replace(/\D/g,'').slice(0,2);
-    form.setFieldsValue({ classCode: cls || undefined, group: undefined, groupCode: undefined, fullCode: undefined, code: undefined, subgroupcode: undefined });
+    form.setFieldsValue({
+      classCode: cls || undefined,
+      group: undefined,
+      groupCode: undefined,
+      fullCode: undefined,
+      code: undefined,
+      subgroupcode: undefined,
+      postingcode: undefined,
+    });
     setGroupOptions([]);
     setSubGroupOptions([]);
     if (!/^\d{2}$/.test(cls)) return;
@@ -71,7 +80,21 @@ export default function PostingAccountForm(){
     if (/^\d{4}$/.test(val)){
       const cls = val.slice(0,2);
       const grp = val.slice(2,4);
-      form.setFieldsValue({ classCode: cls, groupCode: grp, fullCode: undefined, code: undefined, subgroupcode: undefined });
+      const selectedClass = (form.getFieldValue('classCode') || '').toString().replace(/\D/g, '').slice(0, 2);
+      if (/^\d{2}$/.test(selectedClass) && selectedClass !== cls) {
+        message.warning('Selected group does not belong to the chosen account class');
+        form.setFieldsValue({ group: undefined, groupCode: undefined, fullCode: undefined, code: undefined, subgroupcode: undefined, postingcode: undefined });
+        setSubGroupOptions([]);
+        return;
+      }
+      form.setFieldsValue({
+        classCode: cls,
+        groupCode: grp,
+        fullCode: undefined,
+        code: undefined,
+        subgroupcode: undefined,
+        postingcode: undefined,
+      });
       await loadSubGroups(cls, grp);
     }
   };
@@ -92,6 +115,19 @@ export default function PostingAccountForm(){
   const handleSubGroupChange = async (subgroupcode) => {
     const raw = (subgroupcode || '').toString().replace(/\D/g,'');
     if (/^\d{6}$/.test(raw)){
+      form.setFieldsValue({ postingcode: undefined });
+      const selectedClass = (form.getFieldValue('classCode') || '').toString().replace(/\D/g, '').slice(0, 2);
+      const selectedGroup = (form.getFieldValue('groupCode') || '').toString().replace(/\D/g, '').slice(0, 2);
+      if (/^\d{2}$/.test(selectedClass) && raw.slice(0, 2) !== selectedClass) {
+        message.warning('Selected sub-group does not belong to the chosen account class');
+        form.setFieldsValue({ fullCode: undefined, subgroupcode: undefined, code: undefined, postingcode: undefined });
+        return;
+      }
+      if (/^\d{2}$/.test(selectedGroup) && raw.slice(2, 4) !== selectedGroup) {
+        message.warning('Selected sub-group does not belong to the chosen group');
+        form.setFieldsValue({ fullCode: undefined, subgroupcode: undefined, code: undefined, postingcode: undefined });
+        return;
+      }
       form.setFieldsValue({
         fullCode: raw,
         subgroupcode: raw,
@@ -106,8 +142,14 @@ export default function PostingAccountForm(){
         const { success, result } = await request.get({ entity: `postingaccount/next-posting?classCode=${cls}&groupCode=${grp}&subCode=${sub}` });
         if (success && result?.postingcode) {
           form.setFieldsValue({ postingcode: result.postingcode });
+        } else {
+          form.setFieldsValue({ postingcode: `${raw}01` });
         }
-      } catch {}
+      } catch {
+        form.setFieldsValue({ postingcode: `${raw}01` });
+      }
+    } else {
+      form.setFieldsValue({ postingcode: undefined });
     }
   };
 
@@ -136,7 +178,7 @@ export default function PostingAccountForm(){
             <Form.Item
               name='group'
               label='Group Code'
-              tooltip='Select an existing Group (4-digit) for the chosen class'
+              tooltip='Only groups under the selected Account Class are shown'
               rules={[{ required: true, message: 'Group is required' }]}
             >
               <Select
@@ -145,6 +187,7 @@ export default function PostingAccountForm(){
                 placeholder='Select group'
                 options={groupOptions}
                 loading={loadingGroups}
+                disabled={!/^\d{2}$/.test((selectedClassCode || '').toString())}
                 filterOption={(input, option) => (option?.label || '').toLowerCase().includes((input||'').toLowerCase())}
                 onChange={handleGroupChange}
               />
@@ -169,8 +212,16 @@ export default function PostingAccountForm(){
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item name='postingcode' label='Posting Code' rules={[{ required: true, message: 'Posting code is required' }, { pattern: /^\d{8}$/, message: 'Auto format: 8 digits (SSGGSSPP)' }]}>
-              <Input size='small' placeholder='Auto: subgroup + 2-digit' maxLength={12} />
+            <Form.Item
+              name='postingcode'
+              label='Posting Code'
+              tooltip='Auto-generated from selected sub-group'
+              rules={[
+                { required: true, message: 'Posting code is required' },
+                { pattern: /^\d{8}$/, message: 'Auto format: 8 digits (SSGGSSPP)' },
+              ]}
+            >
+              <Input size='small' readOnly placeholder='Auto-generated' maxLength={12} />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>

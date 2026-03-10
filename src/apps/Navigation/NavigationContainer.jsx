@@ -107,6 +107,11 @@ function Sidebar({ collapsible, isMobile = false }) {
           label: <Link to={'/gl/periods'}>{translate('Periods') || 'GL Periods'}</Link>,
         },
         {
+          key: 'gl/account-detail',
+          icon: <FileOutlined />,
+          label: <Link to={'/gl/account-detail'}>{'GL - Account Detail'}</Link>,
+        },
+        {
           key: 'gl/trial-balance',
           icon: <ReconciliationOutlined />,
           label: <Link to={'/gl/trial-balance'}>{'Trial Balance'}</Link>,
@@ -215,6 +220,50 @@ function Sidebar({ collapsible, isMobile = false }) {
         { key: 'offers/leads', icon: <FileOutlined />, label: <Link to={'/offers/leads'}>{translate('offers_for_leads')}</Link> },
       ],
     },
+    // Membership module
+    {
+      key: 'membership-module',
+      icon: <UserOutlined />,
+      label: translate('Membership') || 'Membership',
+      children: [
+        { key: 'membership', icon: <UserOutlined />, label: <Link to={'/membership'}>{'Membership'}</Link> },
+        {
+          key: 'membership/category-setup',
+          icon: <FilterOutlined />,
+          label: <Link to={'/membership/category-setup'}>{'Category Setup'}</Link>,
+        },
+        {
+          key: 'membership/category-type-setup',
+          icon: <FilterOutlined />,
+          label: <Link to={'/membership/category-type-setup'}>{'Category-Type Setup'}</Link>,
+        },
+        {
+          key: 'membership/category-payment-setup',
+          icon: <CreditCardOutlined />,
+          label: <Link to={'/membership/category-payment-setup'}>{'Category Payment Setup'}</Link>,
+        },
+        {
+          key: 'membership/account-setup',
+          icon: <TagsOutlined />,
+          label: <Link to={'/membership/account-setup'}>{'Membership Account Setup'}</Link>,
+        },
+        {
+          key: 'membership/membership-payment',
+          icon: <CreditCardOutlined />,
+          label: <Link to={'/membership/membership-payment'}>{'Membership-Payment'}</Link>,
+        },
+        {
+          key: 'membership/membership-payment-approval',
+          icon: <FileOutlined />,
+          label: <Link to={'/membership/membership-payment/approval'}>{'Membership-Payment Approval'}</Link>,
+        },
+        {
+          key: 'membership/membership-ledger-report',
+          icon: <FileOutlined />,
+          label: <Link to={'/membership/membership-ledger-report'}>{'Membership Ledger Report'}</Link>,
+        },
+      ],
+    },
     // Expenses module
     {
       key: 'expenses-module',
@@ -281,6 +330,7 @@ function Sidebar({ collapsible, isMobile = false }) {
     banks: 'bank',
     products: 'products',
     crm: 'crm',
+    'membership-module': 'membership',
     'expenses-module': 'expenses',
     'settings-module': 'settings',
     budget: 'budget',

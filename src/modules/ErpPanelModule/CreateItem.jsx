@@ -27,14 +27,15 @@ import {
 
 import { useNavigate } from 'react-router-dom';
 
-function SaveForm({ form }) {
+function SaveForm({ form, isSubmitting = false }) {
   const translate = useLanguage();
   const handelClick = () => {
+    if (isSubmitting) return;
     form.submit();
   };
 
   return (
-    <Button onClick={handelClick} type="primary" icon={<PlusOutlined />}>
+    <Button onClick={handelClick} type="primary" icon={<PlusOutlined />} loading={isSubmitting} disabled={isSubmitting}>
       {translate('Save')}
     </Button>
   );
@@ -305,6 +306,7 @@ export default function CreateItem({ config, CreateForm }) {
   const [renderTick, setRenderTick] = useState(0);
   const [journalLines, setJournalLines] = useState([]);
   const [journalHeaderDesc, setJournalHeaderDesc] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const setRecord = (rec) => {
     if (!rec?._id) return;
@@ -610,6 +612,9 @@ export default function CreateItem({ config, CreateForm }) {
   }, [isSuccess]);
 
   const onSubmit = async (fieldsValue) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
     // Removed malformed console.log that could break submit handler
     if (fieldsValue) {
       if (fieldsValue.items) {
@@ -649,16 +654,33 @@ export default function CreateItem({ config, CreateForm }) {
     // Auto-avoid duplicates for GL Account Group by picking next free code
     if (entity === 'glaccountgroup') {
       try {
-        const cls = (fieldsValue.classCode || '').toString().padStart(2, '0');
-        const grp = (fieldsValue.code || '').toString().padStart(2, '0');
-        if (cls && grp) {
-          const { success, result } = await request.filter({ entity: 'glaccountgroup', options: { filter: 'classCode', equal: cls } });
-          if (success && Array.isArray(result)) {
-            const exists = result.some((r)=> (r.code || '').toString() === grp);
+        const pad2 = (v) => {
+          const n = parseInt((v || '').toString(), 10);
+          if (Number.isNaN(n) || n < 1 || n > 99) return '';
+          return n.toString().padStart(2, '0');
+        };
+        const cls = pad2(fieldsValue.classCode);
+        const fullFromField = (fieldsValue.fullCode || '').toString();
+        const grp = pad2(fieldsValue.code || (fullFromField.length === 4 ? fullFromField.slice(2) : ''));
+        if (cls) {
+          let nextGroupCode = grp;
+          if (grp) {
+            const full = `${cls}${grp}`;
+            const { success, result } = await request.filter({
+              entity: 'glaccountgroup',
+              options: { filter: 'groupcode', equal: full },
+            });
+            const exists = success && Array.isArray(result) && result.length > 0;
             if (exists) {
               const { success: s2, result: r2 } = await request.get({ entity: `glaccountgroup/next-code?classCode=${cls}` });
-              if (s2 && r2?.nextCode) fieldsValue.code = r2.nextCode;
+              if (s2 && r2?.nextCode) nextGroupCode = r2.nextCode;
             }
+          }
+          if (nextGroupCode) {
+            fieldsValue.classCode = cls;
+            fieldsValue.code = nextGroupCode;
+            fieldsValue.groupcode = `${cls}${nextGroupCode}`;
+            fieldsValue.fullCode = `${cls}${nextGroupCode}`;
           }
         }
       } catch (e) {
@@ -840,7 +862,10 @@ export default function CreateItem({ config, CreateForm }) {
         fieldsValue.grossAmount = total; // store Total in grossAmount
       } catch (e) { /* ignore; backend will validate */ }
     }
-    dispatch(erp.create({ entity, jsonData: fieldsValue }));
+    await dispatch(erp.create({ entity, jsonData: fieldsValue }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -876,7 +901,7 @@ export default function CreateItem({ config, CreateForm }) {
                     : translate('View Report') || 'View Report'}
             </Button>
           ),
-          <SaveForm form={form} key={`${uniqueId()}`} />,
+          <SaveForm form={form} isSubmitting={isSubmitting || isLoading} key={`${uniqueId()}`} />,
         ].filter(Boolean)}
         style={{
           padding: '8px 0px',

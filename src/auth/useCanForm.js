@@ -44,6 +44,8 @@ export default function useCanForm(defaultModuleKey = null) {
         products: 'products',
         expenses: 'expenses',
         crm: 'crm',
+        membership: 'membership',
+        memberships: 'membership',
         budget: 'budget',
         settings: 'settings',
         gl: 'gl',

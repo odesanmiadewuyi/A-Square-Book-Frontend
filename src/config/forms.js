@@ -7,6 +7,7 @@ export const MODULE_LABELS = {
   products: 'Products',
   expenses: 'Expenses',
   crm: 'CRM',
+  membership: 'Membership',
   budget: 'Budget',
   settings: 'Settings',
 };
@@ -51,6 +52,7 @@ export const FORMS_CATALOG = {
   crm_company_manage: { module: 'crm', label: 'Company - Manage' },
   crm_client_manage: { module: 'crm', label: 'Client - Manage' },
   crm_leadoffer_manage: { module: 'crm', label: 'Lead Offer - Manage' },
+  membership_manage: { module: 'membership', label: 'Membership - Manage' },
 
   settings_update: { module: 'settings', label: 'Settings - Update' },
   department_manage: { module: 'settings', label: 'Department - Manage' },
@@ -102,6 +104,31 @@ export const DEFAULT_FORM_KEYS_BY_ENTITY = {
   lead: { module: 'crm', create: 'crm_lead_create', update: 'crm_lead_create', delete: 'crm_lead_create' },
   client: { module: 'crm', create: 'crm_client_manage', update: 'crm_client_manage', delete: 'crm_client_manage' },
   leadoffer: { module: 'crm', create: 'crm_leadoffer_manage', update: 'crm_leadoffer_manage', delete: 'crm_leadoffer_manage' },
+  membership: { module: 'membership', create: 'membership_manage', update: 'membership_manage', delete: 'membership_manage' },
+  membershipcategory: {
+    module: 'membership',
+    create: 'membership_manage',
+    update: 'membership_manage',
+    delete: 'membership_manage',
+  },
+  membershipcategorytype: {
+    module: 'membership',
+    create: 'membership_manage',
+    update: 'membership_manage',
+    delete: 'membership_manage',
+  },
+  membershipcategorypayment: {
+    module: 'membership',
+    create: 'membership_manage',
+    update: 'membership_manage',
+    delete: 'membership_manage',
+  },
+  membershippayment: {
+    module: 'membership',
+    create: 'membership_manage',
+    update: 'membership_manage',
+    delete: 'membership_manage',
+  },
   arreceipt: { module: 'ar', create: 'ar_receipt_create', update: 'ar_receipt_create', delete: 'ar_receipt_create' },
 
   setting: { module: 'settings', create: 'settings_update', update: 'settings_update', delete: 'settings_update' },

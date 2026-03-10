@@ -1,4 +1,4 @@
-import { Form, Input, Switch, Button, message, Typography } from 'antd';
+import { Form, Input, Switch, Button, message } from 'antd';
 import useLanguage from '@/locale/useLanguage';
 import SelectAsync from '@/components/SelectAsync';
 import { request } from '@/request';
@@ -6,21 +6,24 @@ import { request } from '@/request';
 export default function GLAccountGroupForm(){
   const translate = useLanguage();
   const form = Form.useFormInstance();
-  const clsWatch = Form.useWatch('classCode', form);
-  const codeWatch = Form.useWatch('code', form);
-
   const pad2 = (v) => {
     const n = parseInt((v || '').toString(), 10);
-    if (isNaN(n)) return (v || '').toString().padStart(2, '0');
+    if (isNaN(n) || n < 1 || n > 99) return '';
     return n.toString().padStart(2, '0');
   };
 
   const handleClassChange = async (val) => {
-    const classCode = (val || '').toString();
+    const classCode = pad2(val);
+    form.setFieldsValue({ classCode: classCode || undefined });
+    if (!classCode) {
+      form.setFieldsValue({ code: undefined, fullCode: undefined, groupcode: undefined });
+      return;
+    }
     try {
       const { success, result } = await request.get({ entity: `glaccountgroup/next-code?classCode=${classCode}` });
       if (success && result?.nextCode) {
-        form.setFieldsValue({ code: result.nextCode, fullCode: `${classCode}${result.nextCode}` });
+        const fullCode = `${classCode}${result.nextCode}`;
+        form.setFieldsValue({ code: result.nextCode, fullCode, groupcode: fullCode });
       }
     } catch {
       // silent
@@ -28,16 +31,18 @@ export default function GLAccountGroupForm(){
   };
 
   const suggestNext = async () => {
-    const cls = (form.getFieldValue('classCode') || '').toString();
+    const cls = pad2(form.getFieldValue('classCode'));
     if (!cls) {
       message.warning('Please select a Class first');
       return;
     }
+    form.setFieldsValue({ classCode: cls });
     try {
       const { success, result, message: msg } = await request.get({ entity: `glaccountgroup/next-code?classCode=${cls}` });
       if (!success) return message.error(msg || 'Could not suggest');
-      form.setFieldsValue({ code: result.nextCode });
-      message.success(`Suggested ${result.nextCode}`);
+      const fullCode = `${cls}${result.nextCode}`;
+      form.setFieldsValue({ classCode: cls, code: result.nextCode, fullCode, groupcode: fullCode });
+      message.success(`Suggested ${fullCode}`);
     } catch {
       message.error('Could not suggest');
     }
@@ -71,13 +76,13 @@ export default function GLAccountGroupForm(){
             async validator(){
               const full = (form.getFieldValue('fullCode') || '').toString();
               if (!/^\d{4}$/.test(full)) return Promise.resolve();
-              const cls = full.slice(0,2);
-              const grp = full.slice(2,4);
               try {
-                const { success, result } = await request.filter({ entity: 'glaccountgroup', options: { filter: 'classCode', equal: cls } });
-                if (success && Array.isArray(result)){
-                  const exists = result.some((r)=> (r.code || '').toString() === grp);
-                  if (exists) return Promise.reject(new Error(`Group '${full}' already exists`));
+                const { success, result } = await request.filter({
+                  entity: 'glaccountgroup',
+                  options: { filter: 'groupcode', equal: full },
+                });
+                if (success && Array.isArray(result) && result.length > 0) {
+                  return Promise.reject(new Error(`Group '${full}' already exists`));
                 }
                 return Promise.resolve();
               } catch {

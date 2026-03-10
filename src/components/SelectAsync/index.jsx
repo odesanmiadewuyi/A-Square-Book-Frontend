@@ -21,6 +21,8 @@ const SelectAsync = ({
   listOptions = {},
   remoteSearch = false,
   size,
+  disabled = false,
+  skipFetch = false,
 }) => {
   const translate = useLanguage();
   const [selectOptions, setOptions] = useState([]);
@@ -29,10 +31,17 @@ const SelectAsync = ({
   const navigate = useNavigate();
 
   const asyncList = (opts = {}) => {
+    if (skipFetch) {
+      return Promise.resolve({ success: true, result: [] });
+    }
     return request.list({ entity, options: { ...listOptions, ...opts } });
   };
   const { result, isLoading: fetchIsLoading, isSuccess } = useFetch(() => asyncList());
   useEffect(() => {
+    if (skipFetch) {
+      setOptions([]);
+      return;
+    }
     if (isSuccess) {
       const arr = Array.isArray(result)
         ? result
@@ -57,7 +66,7 @@ const SelectAsync = ({
         // non-blocking safeguard; ignore any clearing error
       }
     }
-  }, [isSuccess, result]);
+  }, [isSuccess, result, skipFetch]);
 
   const labels = (optionField) => {
     return displayLabels.map((x) => optionField[x]).join(' ');
@@ -87,7 +96,7 @@ const SelectAsync = ({
   };
 
   const handleSearch = async (input) => {
-    if (!remoteSearch) return; // rely on local filter
+    if (skipFetch || !remoteSearch) return; // rely on local filter
     try {
       const resp = await asyncList({ search: input });
       const arr = Array.isArray(resp)
@@ -128,7 +137,7 @@ const SelectAsync = ({
       allowClear
       onSearch={handleSearch}
       loading={fetchIsLoading}
-      disabled={fetchIsLoading}
+      disabled={disabled || fetchIsLoading}
       value={currentValue}
       onChange={handleSelectChange}
       placeholder={placeholder}

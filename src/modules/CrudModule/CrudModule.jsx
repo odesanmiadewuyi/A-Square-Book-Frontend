@@ -36,6 +36,27 @@ function AutoOpenCreate({ enabled }) {
   }, [enabled]);
   return null;
 }
+
+function ResetPanelState({ enabled = true }) {
+  const { crudContextAction } = useCrudContext();
+
+  useEffect(() => {
+    if (!enabled) return;
+    try {
+      const { panel, collapsedBox, readBox, editBox, advancedBox } = crudContextAction;
+      readBox?.close?.();
+      editBox?.close?.();
+      advancedBox?.close?.();
+      collapsedBox?.open?.();
+      panel?.close?.();
+    } catch (e) {
+      // ignore
+    }
+  }, [enabled]);
+
+  return null;
+}
+
 function SidePanelTopContent({ config, formElements, withUpload }) {
   const translate = useLanguage();
   const { crudContextAction, state } = useCrudContext();
@@ -200,6 +221,7 @@ function CrudModule({ config, createForm, updateForm, withUpload = false, autoOp
         <SidePanelTopContent config={effectiveConfig} formElements={updateForm} withUpload={withUpload} />
       }
     >
+      <ResetPanelState />
       <AutoOpenCreate enabled={autoOpenCreate} />
       <DataTable config={effectiveConfig} />
       {!disableDelete && <DeleteModal config={effectiveConfig} />}

@@ -9,20 +9,27 @@ export default function GLAccountSubGroupForm(){
   const form = Form.useFormInstance();
   const [groupOptions, setGroupOptions] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const selectedClassCode = Form.useWatch('classCode', form);
+  const normalize2 = (value) => {
+    const n = parseInt((value || '').toString(), 10);
+    if (isNaN(n) || n < 1 || n > 99) return '';
+    return n.toString().padStart(2, '0');
+  };
 
   const handleClassChange = async (classCode) => {
-    const cls = (classCode || '').toString().replace(/\D/g,'').slice(0,2);
+    const cls = normalize2(classCode);
     form.setFieldsValue({ classCode: cls || undefined, group: undefined, groupCode: undefined, fullCode: undefined, code: undefined, subgroupcode: undefined });
     setGroupOptions([]);
-    if (!/^\d{2}$/.test(cls)) return;
+    if (!cls) return;
     try {
       setLoadingGroups(true);
       const { success, result } = await request.filter({ entity: 'glaccountgroup', options: { filter: 'classCode', equal: cls } });
       if (success && Array.isArray(result)){
         const opts = result
           .map((g)=>{
-            const cc = (g.classCode || '').toString().padStart(2,'0');
-            const gc = (g.code || '').toString().padStart(2,'0');
+            const cc = normalize2(g.classCode);
+            const gc = normalize2(g.code);
+            if (!cc || !gc) return null;
             const combined = (g.groupcode && /^\d{4}$/.test((g.groupcode||'').toString())) ? (g.groupcode||'').toString() : `${cc}${gc}`;
             if (!/^\d{4}$/.test(combined)) return null;
             return { value: combined, label: `${combined} ${g.name || ''}`.trim() };
@@ -39,6 +46,12 @@ export default function GLAccountSubGroupForm(){
     if (/^\d{4}$/.test(val)){
       const cls = val.slice(0,2);
       const grp = val.slice(2,4);
+      const selectedClass = normalize2(form.getFieldValue('classCode'));
+      if (selectedClass && selectedClass !== cls) {
+        message.warning('Selected group does not belong to the chosen account class');
+        form.setFieldsValue({ group: undefined, groupCode: undefined, fullCode: undefined, code: undefined, subgroupcode: undefined });
+        return;
+      }
       form.setFieldsValue({ classCode: cls, groupCode: grp });
       try {
         const { success, result } = await request.get({ entity: `glaccountsubgroup/next-code?classCode=${cls}&groupCode=${grp}` });
@@ -50,9 +63,9 @@ export default function GLAccountSubGroupForm(){
   };
 
   const suggestNext = async () => {
-    const cls = (form.getFieldValue('classCode') || '').toString();
-    const grp = (form.getFieldValue('groupCode') || '').toString();
-    if (!/^\d{2}$/.test(cls) || !/^\d{2}$/.test(grp)){
+    const cls = normalize2(form.getFieldValue('classCode'));
+    const grp = normalize2(form.getFieldValue('groupCode'));
+    if (!cls || !grp){
       return message.warning('Select Group Code first');
     }
     try {
@@ -87,7 +100,7 @@ export default function GLAccountSubGroupForm(){
             <Form.Item
               name='group'
               label='Group Code'
-              tooltip='Select an existing Group (4-digit) for the chosen class'
+              tooltip='Only groups under the selected Account Class are shown'
               rules={[{ required: true, message: 'Group is required' }]}
             >
               <Select
@@ -96,6 +109,7 @@ export default function GLAccountSubGroupForm(){
                 placeholder='Select group'
                 options={groupOptions}
                 loading={loadingGroups}
+                disabled={!normalize2(selectedClassCode)}
                 filterOption={(input, option) => (option?.label || '').toLowerCase().includes((input||'').toLowerCase())}
                 onChange={handleGroupChange}
               />
@@ -109,12 +123,24 @@ export default function GLAccountSubGroupForm(){
               rules={[
                 { required: true, message: 'Sub-Group code is required' },
                 { pattern: /^\d{6}$/, message: 'Exactly 6 digits (e.g., 010201)' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || !/^\d{6}$/.test((value || '').toString())) return Promise.resolve();
+                    const selectedClass = (getFieldValue('classCode') || '').toString().replace(/\D/g, '').slice(0, 2);
+                    const selectedGroup = (getFieldValue('groupCode') || '').toString().replace(/\D/g, '').slice(0, 2);
+                    const full = (value || '').toString();
+                    if (/^\d{2}$/.test(selectedClass) && full.slice(0, 2) !== selectedClass) {
+                      return Promise.reject(new Error(`Sub-group must start with selected class '${selectedClass}'`));
+                    }
+                    if (/^\d{2}$/.test(selectedGroup) && full.slice(2, 4) !== selectedGroup) {
+                      return Promise.reject(new Error(`Sub-group must match selected group '${selectedGroup}'`));
+                    }
+                    return Promise.resolve();
+                  },
+                }),
               ]}
               normalize={(v)=>{
                 const raw = (v || '').toString().replace(/\D/g,'').slice(0,6);
-                if (raw.length >= 4){
-                  form.setFieldsValue({ classCode: raw.slice(0,2), groupCode: raw.slice(2,4) });
-                }
                 if (raw.length === 6){
                   form.setFieldsValue({ code: raw.slice(4,6), subgroupcode: raw });
                 }

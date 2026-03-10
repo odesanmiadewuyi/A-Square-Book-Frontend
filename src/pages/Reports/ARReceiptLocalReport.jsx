@@ -13,6 +13,34 @@ const infoCard = {
   borderRadius: 8,
 };
 
+const normalizeRef = (value) => (value || '').toString().trim().toUpperCase();
+const absAmount = (value) => Math.abs(parseFloat(value || 0)) || 0;
+
+const toEntryRows = (receipt = {}) => {
+  if (Array.isArray(receipt.entries) && receipt.entries.length) {
+    return receipt.entries.map((entry, index) => ({
+      ...entry,
+      _lineKey: `${receipt._id || 'receipt'}-${entry?._id || entry?.lineNo || index + 1}`,
+      amount: absAmount(entry?.amount || 0),
+      date: entry?.date || receipt.docDate,
+      description: (entry?.description || '').toString(),
+      arControl: (entry?.arControl || receipt.controlAccountCode || '').toString(),
+      referenceNo: (entry?.referenceNo || receipt.sourceNumber || '').toString(),
+    }));
+  }
+  return [
+    {
+      _lineKey: `${receipt._id || 'receipt'}-1`,
+      lineNo: 1,
+      date: receipt.docDate,
+      description: receipt.description || receipt.notes || '',
+      amount: absAmount(receipt.amount || 0),
+      arControl: receipt.controlAccountCode || '',
+      referenceNo: receipt.sourceNumber || '',
+    },
+  ];
+};
+
 export default function ARReceiptLocalReport({ id, onReady }) {
   const { dateFormat } = useDate();
   const { moneyFormatter } = useMoney();
@@ -28,8 +56,51 @@ export default function ARReceiptLocalReport({ id, onReady }) {
       setError('');
       try {
         const resp = await request.read({ entity: 'ar/receipt', id });
-        const data = resp?.result || resp?.data || resp;
-        if (mounted) setReceipt(data || null);
+        const base = resp?.result || resp?.data || resp;
+        if (!base) {
+          if (mounted) setReceipt(null);
+          return;
+        }
+
+        let merged = base;
+        const hasEntries = Array.isArray(base?.entries) && base.entries.length > 0;
+        const refText = (base?.sourceNumber || '').toString().trim();
+        const refKey = normalizeRef(refText);
+        // Only merge by reference for legacy rows that do not carry entry lines.
+        if (!hasEntries && refKey) {
+          try {
+            const listResp = await request.list({
+              entity: 'ar/receipt',
+              options: { page: 1, items: 1000, ref: refText },
+            });
+            const candidateRows = Array.isArray(listResp?.result)
+              ? listResp.result
+              : Array.isArray(listResp?.data)
+                ? listResp.data
+                : Array.isArray(listResp?.items)
+                  ? listResp.items
+                  : [];
+            const sameReference = candidateRows.filter(
+              (row) => normalizeRef(row?.sourceNumber) === refKey
+            );
+            if (sameReference.length > 1) {
+              const totalAmount = sameReference.reduce((sum, row) => sum + absAmount(row?.amount), 0);
+              const mergedEntries = sameReference.flatMap((row) => toEntryRows(row));
+              merged = {
+                ...base,
+                amount: totalAmount,
+                entries: mergedEntries,
+                description:
+                  base.description ||
+                  (sameReference.length > 1 ? `AR Receipt (${mergedEntries.length} entries)` : ''),
+              };
+            }
+          } catch (_) {
+            // Keep base receipt if related list lookup fails.
+          }
+        }
+
+        if (mounted) setReceipt(merged || null);
       } catch (err) {
         if (mounted) setError('Unable to load receipt data.');
       } finally {
@@ -85,7 +156,9 @@ export default function ARReceiptLocalReport({ id, onReady }) {
     return <div style={{ padding: 16 }}>Receipt not found.</div>;
   }
 
-  const amount = Math.abs(parseFloat(receipt.amount || 0));
+  const entryRows = toEntryRows(receipt);
+  const amountFromEntries = entryRows.reduce((sum, entry) => sum + absAmount(entry?.amount || 0), 0);
+  const amount = amountFromEntries || absAmount(receipt.amount || 0);
   const currency = receipt.currency || 'NGN';
   const bankLabel = receipt.bank
     ? `${receipt.bank.name || ''} ${receipt.bank.accountNumber || ''}`.trim()
@@ -150,10 +223,61 @@ export default function ARReceiptLocalReport({ id, onReady }) {
         </div>
       </div>
 
+      <div style={{ marginTop: 16 }}>
+        <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+          Entry Details
+        </div>
+        <div style={{ marginTop: 8, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '150px 1.7fr 1fr 0.8fr',
+              background: '#f8fafc',
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#475569',
+            }}
+          >
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Date</div>
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Description</div>
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>AR Control</div>
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>Amount</div>
+          </div>
+          {entryRows.map((entry, index) => {
+            const lineAmount = absAmount(entry?.amount || 0);
+            const lineDate = entry?.date || receipt.docDate;
+            return (
+              <div
+                key={entry?._lineKey || `${entry?._id || entry?.lineNo || 'line'}-${index}`}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '150px 1.7fr 1fr 0.8fr',
+                  fontSize: 12,
+                  background: '#fff',
+                }}
+              >
+                <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>
+                  {lineDate ? dayjs(lineDate).format(dateFormat) : '-'}
+                </div>
+                <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>
+                  {entry?.description || '-'}
+                </div>
+                <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>
+                  {entry?.arControl || receipt.controlAccountCode || '-'}
+                </div>
+                <div style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0', textAlign: 'right' }}>
+                  {moneyFormatter({ amount: lineAmount, currency_code: currency })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {receipt.description && (
         <div style={{ marginTop: 16 }}>
           <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.6 }}>
-            Description
+            Transaction Description
           </div>
           <div style={{ fontSize: 13, marginTop: 4 }}>{receipt.description}</div>
         </div>

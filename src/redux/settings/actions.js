@@ -16,6 +16,12 @@ const dispatchSettingsData = (datas) => {
   return settingsCategory;
 };
 
+const joinUrl = (baseUrl = '', path = '') => {
+  const base = (baseUrl || '').toString().trim().replace(/\/+$/, '');
+  const suffix = (path || '').toString().trim().replace(/^\/+/, '');
+  return `${base}/${suffix}`;
+};
+
 export const settingsAction = {
   resetState: () => (dispatch) => {
     dispatch({
@@ -124,7 +130,7 @@ export const settingsAction = {
         const absBase = base.startsWith('http')
           ? base
           : `${window.location.origin}${base.startsWith('/') ? base : '/' + base}`;
-        const joined = `${absBase.replace(/\/+$/, '/') }setting/listAll`;
+        const joined = joinUrl(absBase, 'setting/listAll');
         const resp = await axios.get(joined);
         data = resp?.data;
       } catch (_) {

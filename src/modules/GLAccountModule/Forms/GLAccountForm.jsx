@@ -5,60 +5,69 @@ import { useSelector } from 'react-redux';
 import { selectFinanceSettings } from '@/redux/settings/selectors';
 import { request } from '@/request';
 
-const CLASS_OPTIONS = [
-  { value: '1', label: '1 - Assets' },
-  { value: '2', label: '2 - Liabilities' },
-  { value: '3', label: '3 - Equity' },
-  { value: '4', label: '4 - Income' },
-  { value: '5', label: '5 - Expenses' },
-];
-
 export default function GLAccountForm(){
   const translate = useLanguage();
   const { money_format_settings = {} } = useSelector(selectFinanceSettings);
   const defaultCurrency = money_format_settings?.default_currency_code || 'NGN';
   const form = Form.useFormInstance();
 
-  const handleClassChange = async (val) => {
-    const classCode = (val || '').toString();
-    const parent = (form.getFieldValue('parentCode') || '').toString();
-    // Auto-suggest a 4-digit code upon class selection (e.g., 01 -> 0100)
-    try {
-      const params = new URLSearchParams({ classCode, totalLength: '4' });
+  const normalize2 = (value) => {
+    const n = parseInt((value || '').toString(), 10);
+    if (isNaN(n) || n < 1 || n > 99) return '';
+    return n.toString().padStart(2, '0');
+  };
+
+  const suggestCode = async ({ classCode, parentCode }) => {
+    const cls = normalize2(classCode);
+    const parent = (parentCode || '').toString().replace(/\D/g, '');
+    if (!cls) return { success: false, message: 'Class code must be 1-2 digits' };
+
+    const prefix = parent || cls;
+    const startLen = Math.min(10, Math.max(4, prefix.length + 1));
+    for (let length = startLen; length <= 10; length += 1) {
+      const params = new URLSearchParams({ classCode: cls, totalLength: String(length) });
       if (parent) params.append('parentCode', parent);
-      const { success, result } = await request.get({ entity: `glaccount/next-code?${params}` });
-      if (success && result?.nextCode) {
-        form.setFieldsValue({ code: result.nextCode });
-      } else {
-        // Fallback to base prefix if API not ready
-        const prefix = (parent || classCode).replace(/\s+/g, '');
-        const rem = Math.max(0, 4 - prefix.length);
-        form.setFieldsValue({ code: `${prefix}${'0'.repeat(rem)}` });
-      }
+      const resp = await request.get({ entity: `glaccount/next-code?${params}` });
+      if (resp?.success && resp?.result?.nextCode) return resp;
+      const exhausted = /range exhausted/i.test((resp?.message || '').toString());
+      if (!exhausted) return resp;
+    }
+    return { success: false, message: 'No available account code left for this prefix' };
+  };
+
+  const handleClassChange = async (val) => {
+    const classCode = normalize2(val);
+    const parent = (form.getFieldValue('parentCode') || '').toString();
+    form.setFieldsValue({ classCode: classCode || undefined });
+    if (!classCode) {
+      form.setFieldsValue({ code: undefined });
+      return;
+    }
+    // Auto-suggest the next available code, expanding length when shorter ranges are exhausted.
+    try {
+      const resp = await suggestCode({ classCode, parentCode: parent });
+      if (resp?.success && resp?.result?.nextCode) form.setFieldsValue({ code: resp.result.nextCode });
+      else form.setFieldsValue({ code: undefined });
     } catch {
-      const prefix = (parent || classCode).replace(/\s+/g, '');
-      const rem = Math.max(0, 4 - prefix.length);
-      form.setFieldsValue({ code: `${prefix}${'0'.repeat(rem)}` });
+      form.setFieldsValue({ code: undefined });
     }
   };
 
   const suggestNextCode = async () => {
     try {
-      const cls = (form.getFieldValue('classCode') || '').toString();
+      const cls = normalize2(form.getFieldValue('classCode'));
       if (!cls) {
         message.warning('Please select a Class first');
         return;
       }
       const parent = (form.getFieldValue('parentCode') || '').toString();
-      const params = new URLSearchParams({ classCode: cls, totalLength: '4' });
-      if (parent) params.append('parentCode', parent);
-      const { success, result, message: msg } = await request.get({ entity: `glaccount/next-code?${params}` });
-      if (!success) {
-        message.error(msg || 'Could not suggest next code');
+      const resp = await suggestCode({ classCode: cls, parentCode: parent });
+      if (!resp?.success || !resp?.result?.nextCode) {
+        message.error(resp?.message || 'Could not suggest next code');
         return;
       }
-      form.setFieldsValue({ code: result.nextCode });
-      message.success(`Suggested ${result.nextCode}`);
+      form.setFieldsValue({ classCode: cls, code: resp.result.nextCode });
+      message.success(`Suggested ${resp.result.nextCode}`);
     } catch (e) {
       message.error('Could not suggest next code');
     }

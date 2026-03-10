@@ -10,6 +10,23 @@ import { notification } from 'antd';
 import IdleTimeoutGuard from './IdleTimeoutGuard';
 const ErpApp = lazy(() => import('./ErpApp'));
 
+const clearUiMasks = () => {
+  try {
+    document.body?.classList?.remove('ant-scrolling-effect');
+    document.body?.style?.removeProperty('overflow');
+    document.body?.style?.removeProperty('overflow-x');
+    document.body?.style?.removeProperty('overflow-y');
+    document.body?.style?.removeProperty('width');
+    document
+      .querySelectorAll(
+        '.ant-modal-root, .ant-modal-mask, .ant-modal-wrap, .ant-drawer-mask, .ant-drawer-content-wrapper'
+      )
+      .forEach((el) => {
+      el?.parentNode?.removeChild?.(el);
+    });
+  } catch (_) {}
+};
+
 const DefaultApp = () => (
   <Localization>
     <AppContextProvider>
@@ -60,6 +77,10 @@ export default function IdurarOs() {
   //     window.removeEventListener('offline', handleStatusChange);
   //   };
   // }, [navigator.onLine]);
+
+  useEffect(() => {
+    clearUiMasks();
+  }, [isLoggedIn]);
 
   if (!isLoggedIn)
     return (

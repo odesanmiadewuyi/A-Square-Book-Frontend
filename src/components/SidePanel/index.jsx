@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCrudContext } from '@/context/crud';
 import { useAppContext } from '@/context/appContext';
-import { Grid, Layout, Drawer } from 'antd';
+import { Grid, Layout, Drawer, Modal } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
 import CollapseBox from '../CollapseBox';
 
@@ -11,7 +11,13 @@ const { Sider } = Layout;
 export default function SidePanel({ config, topContent, bottomContent, fixHeaderPanel }) {
   const screens = useBreakpoint();
 
-  const { ADD_NEW_ENTITY, hideAddHeader, showFixHeader = false } = config;
+  const {
+    ADD_NEW_ENTITY,
+    hideAddHeader,
+    showFixHeader = false,
+    panelAsModal = false,
+    panelModalClassName,
+  } = config;
   const { state, crudContextAction } = useCrudContext();
   const { isPanelClose, isBoxCollapsed } = state;
   const { panel, collapsedBox } = crudContextAction;
@@ -54,6 +60,49 @@ export default function SidePanel({ config, topContent, bottomContent, fixHeader
     collapsedBox.collapse();
   };
 
+  const panelContent = (
+    <div
+      className="sidePanelContent"
+      style={{
+        opacity: opacitySider,
+        paddingTop: paddingTopSider,
+      }}
+    >
+      {showFixHeader ? fixHeaderPanel : null}
+      {hideAddHeader ? (
+        <div style={{ marginTop: 0 }}>{bottomContent}</div>
+      ) : (
+        <CollapseBox
+          buttonTitle={ADD_NEW_ENTITY}
+          isCollapsed={isBoxCollapsed}
+          onCollapse={collapsePanelBox}
+          topContent={topContent}
+          bottomContent={bottomContent}
+        ></CollapseBox>
+      )}
+    </div>
+  );
+
+  if (panelAsModal) {
+    return (
+      <Modal
+        title={config.PANEL_TITLE}
+        open={!isPanelClose}
+        onCancel={collapsePanel}
+        footer={null}
+        centered
+        width={config.panelWidth || 560}
+        className={panelModalClassName}
+        styles={{
+          body: { padding: '12px 12px 16px', maxHeight: '75vh', overflowY: 'auto' },
+          header: { padding: '8px 12px' },
+        }}
+      >
+        {panelContent}
+      </Modal>
+    );
+  }
+
   return (
     <Drawer
       title={config.PANEL_TITLE}
@@ -63,27 +112,7 @@ export default function SidePanel({ config, topContent, bottomContent, fixHeader
       width={config.panelWidth || 450}
       styles={{ body: { padding: '12px 12px 16px' }, header: { padding: '8px 12px' } }}
     >
-      <div
-        className="sidePanelContent"
-        style={{
-          opacity: opacitySider,
-          paddingTop: paddingTopSider,
-        }}
-      >
-        {showFixHeader ? fixHeaderPanel : null}
-        {hideAddHeader ? (
-          // Render bottom content directly without the extra header spacing
-          <div style={{ marginTop: 0 }}>{bottomContent}</div>
-        ) : (
-          <CollapseBox
-            buttonTitle={ADD_NEW_ENTITY}
-            isCollapsed={isBoxCollapsed}
-            onCollapse={collapsePanelBox}
-            topContent={topContent}
-            bottomContent={bottomContent}
-          ></CollapseBox>
-        )}
-      </div>
+      {panelContent}
     </Drawer>
     // <Sider
     //   width={screens.md ? '400px' : '95%'}

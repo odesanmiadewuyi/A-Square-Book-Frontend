@@ -13,6 +13,23 @@ import LoginForm from '@/forms/LoginForm';
 import Loading from '@/components/Loading';
 import AuthModule from '@/modules/AuthModule';
 
+const clearUiMasks = () => {
+  try {
+    document.body?.classList?.remove('ant-scrolling-effect');
+    document.body?.style?.removeProperty('overflow');
+    document.body?.style?.removeProperty('overflow-x');
+    document.body?.style?.removeProperty('overflow-y');
+    document.body?.style?.removeProperty('width');
+    document
+      .querySelectorAll(
+        '.ant-modal-root, .ant-modal-mask, .ant-modal-wrap, .ant-drawer-mask, .ant-drawer-content-wrapper'
+      )
+      .forEach((el) => {
+        el?.parentNode?.removeChild?.(el);
+      });
+  } catch (_) {}
+};
+
 const LoginPage = () => {
   const translate = useLanguage();
   const { isLoading, isSuccess } = useSelector(selectAuth);
@@ -60,6 +77,7 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (isSuccess) {
+      clearUiMasks();
       try {
         const raw = window.localStorage.getItem('postLoginRedirect');
         if (raw) {

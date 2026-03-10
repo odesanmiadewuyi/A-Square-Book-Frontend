@@ -47,6 +47,7 @@ const FormatOnBlurNumber = ({ onFocus, onBlur, formatter, parser, ...rest }) => 
 
 export default function ARReceipt() {
   const [form] = Form.useForm();
+  const headerReference = Form.useWatch('referenceNumber', form);
   const addEntryRef = useRef(null);
   const [customerModel, setCustomerModel] = useState('Company');
   const [customerId, setCustomerId] = useState();
@@ -90,17 +91,21 @@ export default function ARReceipt() {
       if (!values.bankId && !effectiveBank) { message.warning('Select a bank or set a default bank'); return; }
       // Batch mode: if entries exist, send them; else fallback to single
       const receipts = Array.isArray(values.entries) ? values.entries.filter((e)=> e && e.amount && e.description) : [];
+      const generatedReference = `RCPT-${dayjs().format('YYYYMMDD-HHmmss')}`;
+      const sharedReference = (values.referenceNumber || generatedReference).toString().trim();
       const payload = receipts.length ? {
         customerId,
         customerModel,
         bankId: values.bankId || effectiveBank || undefined,
         arControl: values.arControl || effectiveAR || undefined,
+        sourceNumber: sharedReference || undefined,
         receipts: receipts.map((r)=> ({
           amount: r.amount,
           description: r.description,
           date: (r.date ? dayjs(r.date).format('YYYY-MM-DD') : (values.date ? dayjs(values.date).format('YYYY-MM-DD') : undefined)),
           arControl: r.arControl || values.arControl || effectiveAR || undefined,
-          sourceNumber: (r.referenceNumber || values.referenceNumber) ? `${r.referenceNumber || values.referenceNumber}` : undefined,
+          referenceNo: sharedReference || undefined,
+          sourceNumber: sharedReference || undefined,
         })),
       } : {
         customerId,
@@ -110,7 +115,7 @@ export default function ARReceipt() {
         date: values.date ? dayjs(values.date).format('YYYY-MM-DD') : undefined,
         description: values.description || '',
         arControl: values.arControl || effectiveAR || undefined,
-        sourceNumber: values.referenceNumber || undefined,
+        sourceNumber: sharedReference || undefined,
       };
       if (!customerId) return message.warning('Select a customer');
       if (!payload.bankId) return message.warning('Select a bank');
@@ -144,9 +149,9 @@ export default function ARReceipt() {
     const description = (form.getFieldValue('description') || '').toString().trim();
     const arCtrl = form.getFieldValue('arControl') || effectiveAR || undefined;
     const headerRef = (form.getFieldValue('referenceNumber') || `RCPT-${dayjs().format('YYYYMMDD-HHmmss')}`).toString();
-    const currentEntries = form.getFieldValue(['entries']) || [];
-    const idx = (Array.isArray(currentEntries) ? currentEntries.length : 0) + 1;
-    const rowRef = `${headerRef}-${idx.toString().padStart(2,'0')}`;
+    if (!form.getFieldValue('referenceNumber')) {
+      form.setFieldsValue({ referenceNumber: headerRef });
+    }
     if (!amount || amount <= 0) {
       message.warning('Enter a valid amount to add');
       return;
@@ -156,7 +161,7 @@ export default function ARReceipt() {
       return;
     }
     if (typeof addEntryRef.current === 'function') {
-      addEntryRef.current({ date, amount, description, arControl: arCtrl, referenceNumber: rowRef });
+      addEntryRef.current({ date, amount, description, arControl: arCtrl, referenceNumber: headerRef });
       // Clear top amount/description after adding
       form.setFieldsValue({ amount: 0, description: '' });
       message.success('Entry added');
@@ -320,10 +325,9 @@ export default function ARReceipt() {
                 {
                   title: 'Reference No',
                   key: 'referenceNumber',
-                  render: (_, field) => (
-                    <Form.Item name={[field.name, 'referenceNumber']} style={{ margin: 0 }} rules={[{ required: true, message: 'Required' }]}>
-                      <Input size='small' placeholder='Reference No' />
-                    </Form.Item>
+                  width: 220,
+                  render: () => (
+                    <Input size='small' value={headerReference || ''} disabled placeholder='Reference No' />
                   ),
                 },
                 {

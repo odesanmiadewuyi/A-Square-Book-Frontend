@@ -11,6 +11,48 @@ const tableCell = {
   fontSize: 12,
 };
 
+const normalizeRef = (value) => (value || '').toString().trim().toUpperCase();
+const absAmount = (value) => Math.abs(parseFloat(value || 0)) || 0;
+
+const groupReceiptRows = (list = []) => {
+  const groups = new Map();
+  list.forEach((row) => {
+    if (!row?._id) return;
+    const ref = (row?.sourceNumber || '').toString().trim();
+    const key = normalizeRef(ref) || row._id.toString();
+    if (!groups.has(key)) {
+      groups.set(key, {
+        ...row,
+        sourceNumber: ref || row._id,
+        amount: 0,
+        groupCount: 0,
+        approvalStatusSet: new Set(),
+      });
+    }
+    const group = groups.get(key);
+    group.amount += absAmount(row?.amount);
+    group.groupCount += 1;
+    group.approvalStatusSet.add((row?.approvalStatus || '').toString().trim() || '-');
+    if (row?.docDate && (!group.docDate || new Date(row.docDate) < new Date(group.docDate))) {
+      group.docDate = row.docDate;
+    }
+  });
+  return Array.from(groups.values())
+    .map((group) => {
+      const statuses = Array.from(group.approvalStatusSet);
+      const approvalStatus = statuses.length === 1 ? statuses[0] : 'Mixed';
+      return {
+        ...group,
+        approvalStatus,
+      };
+    })
+    .sort((a, b) => {
+      const da = a?.docDate ? new Date(a.docDate).getTime() : 0;
+      const db = b?.docDate ? new Date(b.docDate).getTime() : 0;
+      return db - da;
+    });
+};
+
 export default function ARReceiptListReport({ onReady }) {
   const { dateFormat } = useDate();
   const { moneyFormatter } = useMoney();
@@ -35,7 +77,7 @@ export default function ARReceiptListReport({ onReady }) {
             : Array.isArray(resp?.items)
               ? resp.items
               : [];
-        if (mounted) setRows(list);
+        if (mounted) setRows(groupReceiptRows(list));
       } catch (err) {
         if (mounted) setError('Unable to load receipt list.');
       } finally {
@@ -105,7 +147,7 @@ export default function ARReceiptListReport({ onReady }) {
           <div style={{ padding: 14, fontSize: 12, color: '#64748b' }}>No receipts found.</div>
         ) : (
           rows.map((receipt) => {
-            const amount = Math.abs(parseFloat(receipt?.amount || 0)) || 0;
+            const amount = absAmount(receipt?.amount || 0);
             const currency = receipt?.currency || 'NGN';
             const bankLabel = receipt?.bank
               ? `${receipt.bank.name || ''} ${receipt.bank.accountNumber || ''}`.trim()

@@ -106,33 +106,19 @@ export const resetPassword =
   };
 
 export const logout = () => async (dispatch) => {
-  dispatch({
-    type: actionTypes.LOGOUT_SUCCESS,
-  });
-  const result = window.localStorage.getItem('auth');
-  const tmpAuth = JSON.parse(result);
-  const settings = window.localStorage.getItem('settings');
-  const tmpSettings = JSON.parse(settings);
-  window.localStorage.removeItem('auth');
-  window.localStorage.removeItem('settings');
-  window.localStorage.setItem('isLogout', JSON.stringify({ isLogout: true }));
-  const data = await authService.logout();
-  if (data.success === false) {
-    const auth_state = {
-      current: tmpAuth,
-      isLoggedIn: true,
-      isLoading: false,
-      isSuccess: true,
-    };
-    window.localStorage.setItem('auth', JSON.stringify(auth_state));
-    window.localStorage.setItem('settings', JSON.stringify(tmpSettings));
+  // Client-side logout must always win, even when backend logout request fails.
+  dispatch({ type: actionTypes.LOGOUT_SUCCESS });
+  try {
+    window.localStorage.removeItem('auth');
+    window.localStorage.removeItem('settings');
+    window.localStorage.removeItem('postLoginRedirect');
     window.localStorage.removeItem('isLogout');
-    dispatch({
-      type: actionTypes.LOGOUT_FAILED,
-      payload: data.result,
-    });
-  } else {
-    // on lgout success
+  } catch (_) {}
+
+  try {
+    await authService.logout();
+  } catch (_) {
+    // Ignore network/logout endpoint failure. Session is already cleared locally.
   }
 };
 

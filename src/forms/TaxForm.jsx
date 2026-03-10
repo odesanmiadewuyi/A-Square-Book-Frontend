@@ -4,21 +4,28 @@ import SelectAsync from '@/components/SelectAsync';
 import {CloseOutlined, CheckOutlined} from '@ant-design/icons';
 import useLanguage from '@/locale/useLanguage';
 
-export default function TaxForm({isUpdateForm = false, showAccountCode = false}) {
+export default function TaxForm({
+    isUpdateForm = false,
+    showAccountCode = false,
+    showName = true,
+    showValue = true,
+}) {
     const translate = useLanguage();
     return (
         <>
-            <Form.Item
-                label={translate('name')}
-                name="taxName"
-                rules={[
-                    {
-                        required: true,
-                    },
-                ]}
-            >
-                <Input/>
-            </Form.Item>
+            {showName && (
+                <Form.Item
+                    label={translate('name')}
+                    name="taxName"
+                    rules={[
+                        {
+                            required: true,
+                        },
+                    ]}
+                >
+                    <Input/>
+                </Form.Item>
+            )}
 
             {showAccountCode && (
               <Form.Item label={'Posting Code'} name={'accountcode'}>
@@ -30,21 +37,23 @@ export default function TaxForm({isUpdateForm = false, showAccountCode = false})
                 />
               </Form.Item>
             )}
-            <Form.Item
-                label={translate('Value')}
-                name="taxValue"
-                rules={[
-                    {
-                        required: true,
-                        message: 'Please input tax value!',
-                        type: 'number',
-                        min: 0,
-                        max: 100
-                    },
-                ]}
-            >
-                <InputNumber min={0} max={100} suffix={"%"} style={{width: '100%'}}/>
-            </Form.Item>
+            {showValue && (
+                <Form.Item
+                    label={translate('Value')}
+                    name="taxValue"
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please input tax value!',
+                            type: 'number',
+                            min: 0,
+                            max: 100
+                        },
+                    ]}
+                >
+                    <InputNumber min={0} max={100} suffix={"%"} style={{width: '100%'}}/>
+                </Form.Item>
+            )}
 
             <Form.Item
                 label={translate('enabled')}

@@ -1,5 +1,5 @@
-// In dev, use Vite proxy by default to avoid hard-coded ports
-const isRemote = import.meta.env.PROD || import.meta.env.VITE_DEV_REMOTE == 'remote';
+const isProd = !!import.meta.env.PROD;
+const isRemote = isProd;
 const rawBackendServer = (import.meta.env.VITE_BACKEND_SERVER || '').trim();
 const normalizeBackend = (value) => {
   if (!value) return '';
@@ -18,21 +18,28 @@ const backendApi = backendHasApi
     ? `${backendServer}/api/`
     : '/api/';
 
-const localApi = (() => {
-  if (typeof window === 'undefined') return '/api/';
-  return `${window.location.origin}/api/`;
-})();
+const devBackendServer = normalizeBackend(rawBackendServer || 'http://localhost:8888');
+const devBackendHasApi = /\/api$/i.test(devBackendServer);
+const devBackendApi = devBackendHasApi
+  ? `${devBackendServer}/`
+  : `${devBackendServer}/api/`;
+const devBackendRoot = devBackendHasApi
+  ? devBackendServer.replace(/\/api$/i, '')
+  : devBackendServer;
 
-export const API_BASE_URL = isRemote ? backendApi : localApi;
-export const BASE_URL = isRemote ? (backendRoot ? `${backendRoot}/` : '/') : '/';
+const localBase = devBackendRoot ? `${devBackendRoot}/` : '/';
+const localDownloadBase = devBackendRoot ? `${devBackendRoot}/download/` : '/download/';
+
+export const API_BASE_URL = isRemote ? backendApi : devBackendApi;
+export const BASE_URL = isRemote ? (backendRoot ? `${backendRoot}/` : '/') : localBase;
 
 export const WEBSITE_URL = import.meta.env.PROD
   ? 'http://cloud.idurarapp.com/'
   : 'http://localhost:3000/';
 export const DOWNLOAD_BASE_URL =
-  import.meta.env.PROD || import.meta.env.VITE_DEV_REMOTE
+  import.meta.env.PROD
     ? import.meta.env.VITE_BACKEND_SERVER + 'download/'
-    : '/download/';
+    : localDownloadBase;
 export const ACCESS_TOKEN_NAME = 'x-auth-token';
 
 export const FILE_BASE_URL = import.meta.env.VITE_FILE_BASE_URL;

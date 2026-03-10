@@ -1,0 +1,105 @@
+.membership-modal .ant-modal-content {
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(16, 24, 40, 0.16);
+  border: 1px solid #e8edf3;
+}
+
+.membership-modal .collapseBoxHeader {
+  margin-bottom: 10px;
+}
+
+.membership-form-porch {
+  background: linear-gradient(180deg, #f8fafc 0%, #fdfefe 100%);
+  border: 1px solid #e9eef4;
+  border-radius: 12px;
+  padding: 10px 12px 6px;
+}
+
+.membership-porch-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e9eef4;
+}
+
+.membership-porch-head h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #1f2a37;
+}
+
+.membership-form-compact .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.membership-form-compact .ant-form-item-label > label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #435468;
+  letter-spacing: 0.2px;
+}
+
+.membership-form-compact .ant-input,
+.membership-form-compact .ant-select-single .ant-select-selector,
+.membership-form-compact .ant-picker,
+.membership-form-compact .ant-select-selector,
+.membership-form-compact .ant-input-affix-wrapper {
+  min-height: 30px;
+  height: 30px;
+  font-size: 12px;
+  border-radius: 8px;
+  border-color: #d8e2ec;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.membership-form-compact .ant-input:hover,
+.membership-form-compact .ant-select-selector:hover,
+.membership-form-compact .ant-picker:hover,
+.membership-form-compact .ant-input-affix-wrapper:hover {
+  border-color: #9ab1c8 !important;
+}
+
+.membership-form-compact .ant-input:focus,
+.membership-form-compact .ant-input-focused,
+.membership-form-compact .ant-select-focused .ant-select-selector,
+.membership-form-compact .ant-picker-focused,
+.membership-form-compact .ant-input-affix-wrapper-focused {
+  border-color: #6f8eac !important;
+  box-shadow: 0 0 0 2px rgba(111, 142, 172, 0.14) !important;
+}
+
+.membership-form-compact .ant-input,
+.membership-form-compact .ant-picker input,
+.membership-form-compact .ant-select-selection-item,
+.membership-form-compact .ant-select-selection-placeholder,
+.membership-form-compact .ant-input::placeholder {
+  font-size: 12px;
+}
+
+.membership-form-grid .ant-form-item-control-input-content textarea.ant-input {
+  min-height: 64px;
+  height: auto;
+  border-radius: 10px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.membership-form-compact .ant-switch {
+  transform: scale(0.9);
+  transform-origin: left center;
+}
+
+.membership-form-compact .membership-active-item .ant-form-item-control-input {
+  min-height: 30px;
+}
+
+@media (max-width: 768px) {
+  .membership-form-porch {
+    padding: 8px 8px 4px;
+    border-radius: 10px;
+  }
+}

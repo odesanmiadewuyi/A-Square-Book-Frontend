@@ -51,6 +51,14 @@ const StampDutyDeductionPage = lazy(() => import('@/pages/Deductions/StampDutyDe
 const VendorsPage = lazy(() => import('@/pages/Vendor'));
 const StaffPage = lazy(() => import('@/pages/Staff'));
 const RoleTitlePage = lazy(() => import('@/pages/RoleTitle'));
+const MembershipPage = lazy(() => import('@/pages/Membership'));
+const MembershipCategorySetupPage = lazy(() => import('@/pages/Membership/CategorySetup'));
+const MembershipCategoryTypeSetupPage = lazy(() => import('@/pages/Membership/CategoryTypeSetup'));
+const MembershipCategoryPaymentSetupPage = lazy(() => import('@/pages/Membership/CategoryPaymentSetup'));
+const MembershipAccountSetupPage = lazy(() => import('@/pages/Membership/MembershipAccountSetup'));
+const MembershipPaymentPage = lazy(() => import('@/pages/Membership/MembershipPayment'));
+const MembershipPaymentApprovalPage = lazy(() => import('@/pages/Membership/MembershipPaymentApproval'));
+const MembershipLedgerReportPage = lazy(() => import('@/pages/Membership/MembershipLedgerReport'));
 const BudgetSettingsPage = lazy(() => import('@/pages/Settings/BudgetSettings'));
 const BudgetFeatureSettingsPage = lazy(() => import('@/pages/Settings/BudgetFeature'));
 const CustomerLedgerSettings = lazy(() => import('@/pages/Settings/CustomerLedger'));
@@ -99,6 +107,7 @@ const GLJournals = lazy(() => import('@/pages/GL/Journals'));
 const GLJournalApproval = lazy(() => import('@/pages/GL/JournalApproval'));
 const GLPeriods = lazy(() => import('@/pages/GL/Periods'));
 const GLAccountSubGroups = lazy(() => import('@/pages/GL/SubGroups'));
+const GLAccountDetail = lazy(() => import('@/pages/GL/AccountDetail'));
 const CreateGLJournal = lazy(() => import('@/modules/GLJournalModule/wrapper/CreateGLJournalModule'));
 const ReadGLJournal = lazy(() => import('@/modules/GLJournalModule/wrapper/ReadGLJournalModule'));
 const UpdateGLJournal = lazy(() => import('@/modules/GLJournalModule/wrapper/UpdateGLJournalModule'));
@@ -225,6 +234,7 @@ let routes = {
     { path: '/gl/journals', element: <GLJournals /> },
     { path: '/gl/journal-approval', element: <GLJournalApproval /> },
     { path: '/gl/periods', element: <GLPeriods /> },
+    { path: '/gl/account-detail', element: <GLAccountDetail /> },
     { path: '/gl/trial-balance', element: <GLTrialBalance /> },
     { path: '/gl/balance-sheet', element: <GLBalanceSheet /> },
     // Bank setup
@@ -261,6 +271,14 @@ let routes = {
     { path: '/vendor', element: <VendorsPage /> },
     { path: '/staff', element: <StaffPage /> },
     { path: '/roletitle', element: <RoleTitlePage /> },
+    { path: '/membership', element: <MembershipPage /> },
+    { path: '/membership/category-setup', element: <MembershipCategorySetupPage /> },
+    { path: '/membership/category-type-setup', element: <MembershipCategoryTypeSetupPage /> },
+    { path: '/membership/category-payment-setup', element: <MembershipCategoryPaymentSetupPage /> },
+    { path: '/membership/account-setup', element: <MembershipAccountSetupPage /> },
+    { path: '/membership/membership-payment', element: <MembershipPaymentPage /> },
+    { path: '/membership/membership-payment/approval', element: <MembershipPaymentApprovalPage /> },
+    { path: '/membership/membership-ledger-report', element: <MembershipLedgerReportPage /> },
     { path: '/ar/aging', element: <ARAging /> },
     { path: '/ar/statement', element: <ARStatement /> },
     { path: '/ar/credit', element: <ARCreditNote /> },

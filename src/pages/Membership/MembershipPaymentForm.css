@@ -1,0 +1,58 @@
+.membership-payment-compact {
+  max-width: 760px;
+  margin: 4px auto 0;
+  padding: 12px 12px 6px;
+  border-radius: 10px;
+}
+
+.membership-payment-modal .ant-modal-content {
+  border-radius: 12px;
+}
+
+.membership-payment-modal .collapseBoxHeader {
+  text-align: center;
+}
+
+.membership-payment-compact .ant-form-item {
+  margin-bottom: 8px !important;
+}
+
+.membership-payment-compact .ant-form-item-label > label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.membership-payment-compact .ant-input,
+.membership-payment-compact .ant-input-number,
+.membership-payment-compact .ant-picker,
+.membership-payment-compact .ant-select-selector,
+.membership-payment-compact .ant-input-affix-wrapper {
+  min-height: 30px;
+}
+
+.membership-payment-compact .ant-upload-wrapper {
+  width: 100%;
+}
+
+.membership-payment-upload .ant-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.membership-payment-compact .ant-switch {
+  transform: scale(0.95);
+  transform-origin: left center;
+}
+
+.membership-payment-active-item .ant-form-item-control-input {
+  min-height: 30px;
+  align-items: center;
+}
+
+@media (max-width: 576px) {
+  .membership-payment-compact {
+    max-width: 100%;
+    margin-top: 2px;
+    padding: 8px 8px 2px;
+  }
+}

@@ -27,6 +27,7 @@ import PeopleListReport from './PeopleListReport';
 import CompanyListReport from './CompanyListReport';
 import JobOrderLocalReport from './JobOrderLocalReport';
 import InvoiceJOLocalReport from './InvoiceJOLocalReport';
+import MembershipPaymentReceiptReport from './MembershipPaymentReceiptReport';
 
 const PAINT_DELAY_MS = 250;
 const AUTO_PRINT_DELAY_MS = 1500;
@@ -63,6 +64,7 @@ export default function ReportViewer() {
     'companies',
     'joborder',
     'invoicejo',
+    'membershippayment',
   ].includes(normalizedEntity);
   const autoLoad = useMemo(() => searchParams.get('autoload') === '1', [searchParams]);
   const autoPrint = useMemo(() => searchParams.get('print') === '1', [searchParams]);
@@ -119,6 +121,7 @@ export default function ReportViewer() {
     companies: 'COMPANIES Report',
     joborder: 'JOB ORDER Report',
     invoicejo: 'INVOICE JO Report',
+    membershippayment: 'MEMBERSHIP PAYMENT RECEIPT',
   };
   const title = reportTitles[normalizedEntity] || `${(entity || 'report').toUpperCase()} Report`;
   const documentTitles = {
@@ -142,6 +145,7 @@ export default function ReportViewer() {
     companies: 'Company List',
     joborder: 'Job Order Voucher',
     invoicejo: 'Invoice JO Voucher',
+    membershippayment: 'Membership Payment Receipt',
   };
   const documentTitle = documentTitles[normalizedEntity] || title;
 
@@ -156,6 +160,24 @@ export default function ReportViewer() {
     setIsLoaded(true);
     setReportKey((k) => k + 1);
   };
+  const handleCancel = useCallback(() => {
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      // Receipt is usually opened in a new tab; close it when possible.
+      if (window.opener) {
+        window.close();
+        return;
+      }
+      if (window.history.length > 1) {
+        navigate(-1);
+        return;
+      }
+    }
+    navigate('/membership/membership-payment');
+  }, [navigate, returnTo]);
   const handleReportReady = useCallback(() => {
     setReadySignature(reportLoadKey);
   }, [reportLoadKey]);
@@ -321,7 +343,7 @@ export default function ReportViewer() {
                   Print
                 </Button>
               )}
-              <Button size="small" onClick={() => (returnTo ? navigate(returnTo) : navigate(-1))}>
+              <Button size="small" onClick={handleCancel}>
                 Cancel
               </Button>
             </div>
@@ -371,6 +393,8 @@ export default function ReportViewer() {
                   <JobOrderLocalReport id={id} onReady={handleReportReady} />
                 ) : normalizedEntity === 'invoicejo' ? (
                   <InvoiceJOLocalReport id={id} onReady={handleReportReady} />
+                ) : normalizedEntity === 'membershippayment' ? (
+                  <MembershipPaymentReceiptReport id={id} onReady={handleReportReady} />
                 ) : (
                   <ProductCategoryListReport onReady={handleReportReady} />
                 )
