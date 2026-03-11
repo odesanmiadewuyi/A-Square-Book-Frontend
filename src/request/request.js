@@ -208,7 +208,7 @@ function includeToken() {
   const ensureTrailingSlash = (s = '') => (s.endsWith('/') ? s : s + '/');
   const stripTrailingSlash = (s = '') => s.replace(/\/+$/, '');
 
-  const base = (API_BASE_URL || '').toString();
+  const base = (API_BASE_URL || '').toString().trim();
   const baseOrigin =
     BASE_URL && BASE_URL !== '/'
       ? stripTrailingSlash(BASE_URL)
@@ -217,10 +217,13 @@ function includeToken() {
       : '';
 
   let resolved;
-  if (base.startsWith('http')) {
-    resolved = ensureTrailingSlash(stripTrailingSlash(base));
+  if (/^https?:\/\//i.test(base)) {
+    // Guard against misconfigured env values like https://host (without /api).
+    const normalizedAbsolute = toApiBase(base) || base;
+    resolved = ensureTrailingSlash(stripTrailingSlash(normalizedAbsolute));
   } else {
-    const path = base.startsWith('/') ? base : '/' + base;
+    const normalizedRelative = toApiBase(base) || '/api/';
+    const path = normalizedRelative.startsWith('/') ? normalizedRelative : '/' + normalizedRelative;
     resolved = ensureTrailingSlash(stripTrailingSlash(baseOrigin) + stripTrailingSlash(path));
   }
 
