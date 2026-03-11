@@ -49,6 +49,7 @@ const buildDirectApiBase = () => {
 
 const DIRECT_API_BASE = buildDirectApiBase();
 const DIRECT_ROOT_BASE = toRootBase(DIRECT_API_BASE) || '/';
+const SHOULD_TRY_DIRECT_ROOT = /(?:localhost|127\.0\.0\.1)/i.test(DIRECT_ROOT_BASE);
 const normalizeEntity = (value = '') =>
   value
     .toString()
@@ -60,10 +61,10 @@ const resolveCrudEntity = (value = '') => {
   const normalized = normalizeEntity(value);
   if (!normalized) return normalized;
   if (normalized === 'memberships') return 'membership';
-  if (isMembershipCategoryPaymentEntity(normalized)) return 'membershipcategorypayment';
-  if (isMembershipCategoryEntity(normalized)) return 'membershipcategory';
-  if (isMembershipAccountSetupEntity(normalized)) return 'membershipaccountsetup';
-  if (isMembershipCategoryTypeEntity(normalized)) return 'membershipcategorytype';
+  if (isMembershipCategoryPaymentEntity(normalized)) return 'membership/category-payment-setup';
+  if (isMembershipCategoryEntity(normalized)) return 'membership/category-setup';
+  if (isMembershipAccountSetupEntity(normalized)) return 'membership/account-setup';
+  if (isMembershipCategoryTypeEntity(normalized)) return 'membership/category-type-setup';
   return normalized;
 };
 
@@ -72,49 +73,30 @@ const withDirectRoot = (path = '') => `${DIRECT_ROOT_BASE}${path.toString().repl
 
 const MEMBERSHIP_BASES = ['membership', 'memberships'];
 const MEMBERSHIP_ACCOUNT_SETUP_BASES = [
+  'membership/account-setup',
   'membershipaccountsetup',
-  'membershipaccountsetups',
+  'membership-account-setup',
   'membershipacountsetup',
   'membershipacccountsetup',
-  'membership-account-setup',
-  'membership/account-setup',
-  'membership/accountsetup',
-  'membership/account-setups',
 ];
 const MEMBERSHIP_CATEGORY_BASES = [
-  'membershipcategory',
-  'membershipcategories',
-  'membershipcategorysetup',
-  'membershipcategoriesetup',
   'membership/category-setup',
+  'membershipcategory',
   'membership-category-setup',
-  'membership/category',
-  'membership/categories',
-  'membership/categorysetup',
 ];
 const MEMBERSHIP_CATEGORY_TYPE_BASES = [
-  'membershipcategorytype',
-  'membershipcategorytypes',
-  'membershipcategorytypesetup',
   'membership/category-type-setup',
+  'membershipcategorytype',
   'membership-category-type-setup',
-  'membership/category-type',
-  'membership/category-types',
-  'membership/categorytypesetup',
   // Backward-compatibility aliases for typo variants seen in some builds.
   'membershippicategorytype',
   'membershippiategorytype',
   'membershippi/category-type-setup',
 ];
 const MEMBERSHIP_CATEGORY_PAYMENT_BASES = [
-  'membershipcategorypayment',
-  'membershipcategorypayments',
-  'membershipcategorypaymentsetup',
   'membership/category-payment-setup',
+  'membershipcategorypayment',
   'membership-category-payment-setup',
-  'membership/category-payment',
-  'membership/category-payments',
-  'membership/categorypaymentsetup',
 ];
 
 const isMembershipAccountSetupEntity = (value = '') => {
@@ -168,7 +150,9 @@ const buildMembershipEntityCandidates = (bases = [], suffix = '') => {
     const rel = `${base}/${cleanSuffix}`.replace(/\/+$/, '');
     urls.push(rel);
     urls.push(withDirectApi(rel));
-    urls.push(withDirectRoot(rel));
+    if (SHOULD_TRY_DIRECT_ROOT) {
+      urls.push(withDirectRoot(rel));
+    }
   }
 
   return Array.from(new Set(urls));
