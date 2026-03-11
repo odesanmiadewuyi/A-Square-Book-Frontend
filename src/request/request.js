@@ -12,7 +12,7 @@ const toApiBase = (raw = '') => {
     .replace(/^['"]|['"]$/g, '')
     .replace(/\/+$/, '');
   if (!cleaned) return '';
-  if (/\/api$/i.test(cleaned)) return `${cleaned}/`;
+  if (/\/api(?:\/|$)/i.test(cleaned)) return `${cleaned}/`;
   return `${cleaned}/api/`;
 };
 

@@ -1,28 +1,38 @@
 const isProd = !!import.meta.env.PROD;
 const isRemote = isProd;
 const rawBackendServer = (import.meta.env.VITE_BACKEND_SERVER || '').trim();
+const stripWrappingQuotes = (value = '') =>
+  value
+    .toString()
+    .trim()
+    .replace(/^['"]|['"]$/g, '');
+
 const normalizeBackend = (value) => {
-  if (!value) return '';
-  if (/^https?:\/\//i.test(value)) {
-    return value.replace(/\/+$/, '');
+  const cleaned = stripWrappingQuotes(value || '');
+  if (!cleaned) return '';
+  if (/^https?:\/\//i.test(cleaned)) {
+    return cleaned.replace(/\/+$/, '');
   }
-  const withLeading = value.startsWith('/') ? value : `/${value}`;
+  const withLeading = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
   return withLeading.replace(/\/+$/, '');
 };
+
+const hasApiPath = (value = '') => /\/api(?:\/|$)/i.test(value);
+const toApiBase = (value = '') => {
+  const normalized = normalizeBackend(value);
+  if (!normalized) return '/api/';
+  if (hasApiPath(normalized)) return `${normalized}/`;
+  return `${normalized}/api/`;
+};
+
 const backendServer = normalizeBackend(rawBackendServer);
-const backendHasApi = /\/api$/i.test(backendServer);
+const backendHasApi = hasApiPath(backendServer);
 const backendRoot = backendHasApi ? backendServer.replace(/\/api$/i, '') : backendServer;
-const backendApi = backendHasApi
-  ? `${backendServer}/`
-  : backendServer
-    ? `${backendServer}/api/`
-    : '/api/';
+const backendApi = toApiBase(backendServer);
 
 const devBackendServer = normalizeBackend(rawBackendServer || 'http://localhost:8888');
-const devBackendHasApi = /\/api$/i.test(devBackendServer);
-const devBackendApi = devBackendHasApi
-  ? `${devBackendServer}/`
-  : `${devBackendServer}/api/`;
+const devBackendHasApi = hasApiPath(devBackendServer);
+const devBackendApi = toApiBase(devBackendServer);
 const devBackendRoot = devBackendHasApi
   ? devBackendServer.replace(/\/api$/i, '')
   : devBackendServer;
@@ -37,12 +47,12 @@ export const WEBSITE_URL = import.meta.env.PROD
   ? 'http://cloud.idurarapp.com/'
   : 'http://localhost:3000/';
 export const DOWNLOAD_BASE_URL =
-  import.meta.env.PROD
-    ? import.meta.env.VITE_BACKEND_SERVER + 'download/'
+  isRemote
+    ? (backendRoot ? `${backendRoot}/download/` : '/download/')
     : localDownloadBase;
 export const ACCESS_TOKEN_NAME = 'x-auth-token';
 
-export const FILE_BASE_URL = import.meta.env.VITE_FILE_BASE_URL;
+export const FILE_BASE_URL = stripWrappingQuotes(import.meta.env.VITE_FILE_BASE_URL || '');
 export const REPORT_BASE_URL = import.meta.env.VITE_REPORT_SERVER || '/ssrs/';
 
 //  console.log(
